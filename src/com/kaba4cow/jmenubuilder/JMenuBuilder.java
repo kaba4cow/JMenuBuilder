@@ -1,10 +1,13 @@
 package com.kaba4cow.jmenubuilder;
 
 import java.awt.event.ActionListener;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
 
 /**
  * A builder class for constructing and configuring {@link JMenu} objects with a
@@ -24,14 +27,29 @@ public class JMenuBuilder {
 	}
 
 	/**
-	 * Applies a custom function to this {@link JMenuBuilder} using a
-	 * {@link JMenuBuilderFunction}.
+	 * Adds a {@link JMenuItem} to the current menu without an
+	 * {@link ActionListener}.
 	 *
-	 * @param function the function to apply
+	 * @param item the menu item to add
 	 * @return reference to this object
 	 */
-	public JMenuBuilder function(JMenuBuilderFunction function) {
-		function.build(this);
+	public JMenuBuilder item(JMenuItem item) {
+		return item(item, null);
+	}
+
+	/**
+	 * Adds a {@link JMenuItem} to the current menu with an optional
+	 * {@link ActionListener}.
+	 *
+	 * @param item           the menu item to add
+	 * @param actionListener the action listener to attach to the menu item, or
+	 *                       {@code null} if none
+	 * @return reference to this object
+	 */
+	public JMenuBuilder item(JMenuItem item, ActionListener actionListener) {
+		if (actionListener != null)
+			item.addActionListener(actionListener);
+		this.menu.add(item);
 		return this;
 	}
 
@@ -68,29 +86,46 @@ public class JMenuBuilder {
 	}
 
 	/**
-	 * Adds a {@link JMenuItem} to the current menu without an
-	 * {@link ActionListener}.
-	 *
-	 * @param item the menu item to add
+	 * Executes an action on this {@link JMenuBuilder}.
+	 * 
+	 * @param action the action to execute on this {@link JMenuBuilder}
 	 * @return reference to this object
 	 */
-	public JMenuBuilder item(JMenuItem item) {
-		return item(item, null);
+	public JMenuBuilder execute(Consumer<JMenuBuilder> action) {
+		action.accept(this);
+		return this;
 	}
 
 	/**
-	 * Adds a {@link JMenuItem} to the current menu with an optional
-	 * {@link ActionListener}.
-	 *
-	 * @param item           the menu item to add
-	 * @param actionListener the action listener to attach to the menu item, or
-	 *                       {@code null} if none
+	 * Executes a condition on this {@link JMenuBuilder}. If {@code condition}
+	 * returns {@code true} then {@code passAction} is executed.
+	 * 
+	 * @param condition  the condition to check
+	 * @param passAction the action to execute on condition passed
 	 * @return reference to this object
 	 */
-	public JMenuBuilder item(JMenuItem item, ActionListener actionListener) {
-		if (actionListener != null)
-			item.addActionListener(actionListener);
-		this.menu.add(item);
+	public JMenuBuilder executeIf(Supplier<Boolean> condition, Consumer<JMenuBuilder> passAction) {
+		if (condition.get())
+			passAction.accept(this);
+		return this;
+	}
+
+	/**
+	 * Executes a branched condition on this {@link JMenuBuilder}. If
+	 * {@code condition} returns {@code true} then {@code passAction} is executed,
+	 * else {@code failAction} is executed.
+	 * 
+	 * @param condition  the condition to check
+	 * @param passAction the action to execute on condition passed
+	 * @param failAction the action to execute on condition failed
+	 * @return reference to this object
+	 */
+	public JMenuBuilder executeIfElse(Supplier<Boolean> condition, Consumer<JMenuBuilder> passAction,
+			Consumer<JMenuBuilder> failAction) {
+		if (condition.get())
+			passAction.accept(this);
+		else
+			failAction.accept(this);
 		return this;
 	}
 
@@ -118,6 +153,15 @@ public class JMenuBuilder {
 	 * @param target the target menu to add the menu to
 	 */
 	public void build(JMenu target) {
+		target.add(menu);
+	}
+
+	/**
+	 * Adds the constructed menu to a specified {@link JPopupMenu}.
+	 *
+	 * @param target the target menu to add the menu to
+	 */
+	public void build(JPopupMenu target) {
 		target.add(menu);
 	}
 
